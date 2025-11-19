@@ -97,6 +97,13 @@
         <div class="content-box">
             <h2 class="text-xl font-semibold mb-4 border-b pb-2 text-gray-700">עורך Markdown גולמי (קלט)</h2>
             
+            <!-- כפתור הוספת טבלה -->
+            <div class="mb-3 flex justify-start">
+                <button id="insert-table-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition duration-150 transform hover:scale-[1.01] text-sm">
+                    ➕ הוסף טבלה
+                </button>
+            </div>
+
             <textarea id="editor-content" 
                  class="w-full text-lg focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition duration-150"
                  spellcheck="false"></textarea>
@@ -118,6 +125,7 @@
         const editorContent = document.getElementById('editor-content');
         const previewElement = document.getElementById('preview');
         const markdownOutput = document.getElementById('markdown-output');
+        const insertTableBtn = document.getElementById('insert-table-btn');
 
         const marked = window.marked.marked;
 
@@ -136,7 +144,6 @@
                 tempDiv.querySelectorAll('img').forEach(img => {
                     img.setAttribute('src', 'https://placehold.co/600x400.png');
                     
-                    // טיפול שגיאות שמחזיר placeholder עם טקסט חלופי במקרה שה-src הגנרי נכשל
                     img.setAttribute('onerror', `this.onerror=null; this.alt='[שגיאת טעינה: הוצג טקסט חלופי]'; this.src='https://placehold.co/600x400/eeeeee/333333?text='+encodeURIComponent(this.alt);`);
                     img.setAttribute('class', 'max-w-full h-auto rounded-md shadow-md');
                 });
@@ -159,9 +166,68 @@
             }
         }
 
-        // הוספת קיצור דרך Ctrl+B (או Cmd+B) להדגשת טקסט
+        // פונקציה להוספת טקסט במיקום הסמן
+        function insertTextAtCursor(textToInsert) {
+            const start = editorContent.selectionStart;
+            const end = editorContent.selectionEnd;
+            const value = editorContent.value;
+
+            editorContent.value = value.substring(0, start) + textToInsert + value.substring(end, value.length);
+
+            // מיקום הסמן לאחר הטקסט שהוזן
+            editorContent.selectionStart = start + textToInsert.length;
+            editorContent.selectionEnd = editorContent.selectionStart;
+
+            updatePreview();
+            editorContent.focus();
+        }
+
+        // לוגיקה ליצירה והוספת טבלת Markdown
+        function insertTable() {
+            const rows = parseInt(prompt("אנא הזינו את מספר השורות (כולל כותרת):", "3"));
+            const cols = parseInt(prompt("אנא הזינו את מספר העמודות:", "3"));
+
+            if (isNaN(rows) || rows <= 0 || isNaN(cols) || cols <= 0) {
+                // לא להשתמש ב-alert/confirm, אבל prompt הוא חריג נסבל עבור קלט
+                console.log("קלט לא תקין. יש להזין מספר חיובי.");
+                return;
+            }
+
+            let tableMd = "\n";
+            let headers = [];
+            let alignment = [];
+            let rowData = [];
+
+            // כותרות (שורה 1)
+            for (let i = 1; i <= cols; i++) {
+                headers.push(`כותרת ${i}`);
+                alignment.push(`:---`); // יישור לימין (RTL)
+            }
+            tableMd += `| ${headers.join(' | ')} |\n`;
+            
+            // שורת יישור (שורה 2)
+            tableMd += `| ${alignment.join(' | ')} |\n`;
+
+            // שורות הנתונים
+            for (let r = 1; r < rows; r++) {
+                let cells = [];
+                for (let c = 1; c <= cols; c++) {
+                    cells.push(`נתון ${r}, ${c}`);
+                }
+                rowData.push(`| ${cells.join(' | ')} |`);
+            }
+            tableMd += rowData.join('\n');
+            tableMd += "\n";
+
+            insertTextAtCursor(tableMd);
+        }
+
+        // לחיצה על כפתור הוספת טבלה
+        insertTableBtn.addEventListener('click', insertTable);
+
+
+        // קיצור דרך Ctrl+B (או Cmd+B) להדגשת טקסט
         editorContent.addEventListener('keydown', (e) => {
-            // בדיקה עבור Ctrl+B (Windows/Linux) או Cmd+B (Mac)
             if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
                 e.preventDefault();
 
@@ -169,23 +235,31 @@
                 const end = editorContent.selectionEnd;
                 const value = editorContent.value;
                 
-                // 1. קבלת חלקי המחרוזת
-                const before = value.substring(0, start);
                 const selected = value.substring(start, end);
-                const after = value.substring(end, value.length);
-
-                // 2. עטיפת הבחירה בתחביר Markdown להדגשה
                 const newSelected = `**${selected}**`;
 
-                // 3. עדכון תוכן תיבת הטקסט
-                editorContent.value = before + newSelected + after;
+                // אם אין בחירה, פשוט הוסף ** ועבור פנימה
+                let insertStart = start;
+                let insertEnd = end;
+                let textToInsert = newSelected;
 
-                // 4. מיקום הסמן מחדש
-                // הסמן ממוקם לאחר התחביר החדש שנוסף (שני כוכביות)
-                editorContent.selectionStart = start + 2 + selected.length; 
-                editorContent.selectionEnd = editorContent.selectionStart;
+                if (start === end) {
+                    textToInsert = "****"; // הוסף כוכביות כפולות
+                    insertStart = start + 2; // מיקום הסמן בין הכוכביות
+                    insertEnd = start + 2;
+                } else {
+                    // יש בחירה, בצע החלפה רגילה
+                    const before = value.substring(0, start);
+                    const after = value.substring(end, value.length);
+                    editorContent.value = before + textToInsert + after;
+                    
+                    insertStart = start + newSelected.length;
+                    insertEnd = insertStart;
+                }
                 
-                // 5. עדכון התצוגה המקדימה
+                editorContent.selectionStart = insertStart; 
+                editorContent.selectionEnd = insertEnd;
+                
                 updatePreview();
             }
         });

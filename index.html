@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>עורך Markdown טהור - תצוגה מקדימה RTL</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700&display=swap');
+        body {
+            font-family: 'Heebo', sans-serif;
+            background-color: #f7f7f7;
+            color: #1e293b;
+        }
+        .content-box {
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            background-color: white;
+            transition: box-shadow 0.3s;
+            display: flex;
+            flex-direction: column;
+        }
+        .content-box:hover {
+             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        #preview h1 { font-size: 2.25rem; font-weight: 700; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0; }
+        #preview h2 { font-size: 1.875rem; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.75rem; }
+        #preview h3 { font-size: 1.5rem; font-weight: 700; margin-top: 1rem; margin-bottom: 0.5rem; }
+        #preview p, #preview li { line-height: 1.8; margin-bottom: 1rem; }
+        #preview ul { list-style-type: disc; margin-right: 1.5rem; }
+        #preview ol { list-style-type: decimal; margin-right: 1.5rem; }
+        #preview pre { background-color: #f1f5f9; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; margin-bottom: 1rem; border: 1px solid #e2e8f0; }
+        #preview code { background-color: #e2e8f0; padding: 0.2rem 0.4rem; border-radius: 0.3rem; font-size: 0.875rem; }
+        #preview img { max-width: 100%; height: auto; border-radius: 0.5rem; margin: 1rem 0; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); }
+        
+        #preview blockquote {
+            border-right: 5px solid #3b82f6;
+            background-color: #eff6ff;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 0.5rem;
+            font-style: italic;
+            color: #1e40af;
+        }
+
+        #preview table {
+            width: 100%;
+            margin: 1.5rem 0;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+            text-align: right;
+            direction: rtl;
+        }
+        #preview th, #preview td {
+            padding: 0.75rem 1rem;
+            border: 1px solid #cbd5e1;
+            text-align: right;
+        }
+        #preview th {
+            background-color: #e2e8f0;
+            font-weight: 700;
+            color: #1e293b;
+        }
+        #preview tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        
+        #editor-content, #preview {
+            direction: rtl;
+            text-align: right;
+        }
+
+        #editor-content {
+            border: 1px solid #e2e8f0;
+            min-height: 400px;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            outline: none;
+            line-height: 1.8;
+            resize: none;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/lib/marked.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+</head>
+<body class="p-4 md:p-8">
+
+    <header class="mb-6 text-center">
+        <h1 class="text-4xl font-bold text-indigo-700">עורך Markdown טהור ותצוגה מקדימה (RTL)</h1>
+        <p class="text-lg text-gray-600 mt-2">הקלידו Markdown גולמי בצד ימין וצפו בתצוגה המעוצבת בצד שמאל.</p>
+    </header>
+
+    <main class="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
+        
+        <div class="content-box">
+            <h2 class="text-xl font-semibold mb-4 border-b pb-2 text-gray-700">עורך Markdown גולמי (קלט)</h2>
+            
+            <textarea id="editor-content" 
+                 class="w-full text-lg focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition duration-150 flex-grow"
+                 spellcheck="false"></textarea>
+
+            <h3 class="text-lg font-semibold mt-4 mb-2 text-gray-700">Markdown שנוצר</h3>
+            <pre id="markdown-output" class="text-sm whitespace-pre-wrap bg-gray-100 p-3 rounded-lg border border-gray-200 min-h-[50px]">הקלידו קוד Markdown בתיבת העריכה.</pre>
+        </div>
+        
+        <div class="content-box">
+            <h2 class="text-xl font-semibold mb-4 border-b pb-2 text-gray-700">תצוגה מקדימה (RTL)</h2>
+            <div id="preview" class="min-h-96 border border-gray-300 p-4 rounded-lg overflow-y-auto flex-grow">
+                <p class="text-center text-gray-400 mt-20">התצוגה המקדימה תופיע כאן אוטומטית.</p>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        const editorContent = document.getElementById('editor-content');
+        const previewElement = document.getElementById('preview');
+        const markdownOutput = document.getElementById('markdown-output');
+
+        const marked = window.marked.marked;
+
+        function updatePreview() {
+            const markdownText = editorContent.value;
+            
+            markdownOutput.textContent = markdownText;
+
+            try {
+                const finalRawHtml = marked(markdownText);
+                
+                const safeHtmlForDisplay = DOMPurify.sanitize(finalRawHtml);
+
+                previewElement.innerHTML = safeHtmlForDisplay;
+                
+                if (markdownText.trim() === '') {
+                    previewElement.innerHTML = '<p class="text-center text-gray-400 mt-20">התצוגה המקדימה תופיע כאן אוטומטית.</p>';
+                }
+
+
+            } catch (error) {
+                previewElement.innerHTML = `<div class="p-4 bg-red-100 border border-red-400 text-red-700 rounded text-right" dir="rtl">
+                    <p class="font-bold">שגיאה בהמרת Markdown:</p>
+                    <p>${error.message}</p>
+                    <p class="text-sm mt-2">אנא בדקו את תחביר ה-Markdown שלכם.</p>
+                </div>`;
+                console.error("Markdown conversion error:", error);
+            }
+        }
+
+        window.onload = function() {
+            const defaultMarkdown = `
+# כותרת ראשית (H1)
+זהו עורך Markdown טהור עם תצוגה מקדימה מיידית (Live Preview). 
+כעת, כל מה שתקלידו בתחביר Markdown, יומר מיד ל-HTML מוכן.
+
+## כותרת משנית (H2)
+* **מודגש:** השתמשו בכוכביות כפולות: \`**טקסט מודגש**\`.
+* _נטוי:_ השתמשו בכוכבית בודדת: \`*טקסט נטוי*\`.
+
+> ציטוט והערה מיוחדת:
+> יש לשים לב לכך שהטקסט מיושר לימין.
+
+### כותרת קטנה (H3)
+1. פריט רשימה ממוספרת.
+2. פריט שני ברשימה.
+
+---
+| פרמטר | ערך | סטטוס |
+| :--- | :--- | :--- |
+| משתמשים | 1,200 | תקין |
+| ביצועים | 250ms | דורש שיפור |
+`;
+            
+            editorContent.value = defaultMarkdown.trim();
+            editorContent.addEventListener('input', updatePreview);
+            
+            updatePreview();
+        };
+    </script>
+</body>
+</html>

@@ -97,7 +97,6 @@
         <div class="content-box">
             <h2 class="text-xl font-semibold mb-4 border-b pb-2 text-gray-700">עורך Markdown גולמי (קלט)</h2>
             
-            <!-- כפתור הוספת טבלה -->
             <div class="mb-3 flex justify-start">
                 <button id="insert-table-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition duration-150 transform hover:scale-[1.01] text-sm">
                     ➕ הוסף טבלה
@@ -188,7 +187,6 @@
             const cols = parseInt(prompt("אנא הזינו את מספר העמודות:", "3"));
 
             if (isNaN(rows) || rows <= 0 || isNaN(cols) || cols <= 0) {
-                // לא להשתמש ב-alert/confirm, אבל prompt הוא חריג נסבל עבור קלט
                 console.log("קלט לא תקין. יש להזין מספר חיובי.");
                 return;
             }
@@ -226,41 +224,51 @@
         insertTableBtn.addEventListener('click', insertTable);
 
 
-        // קיצור דרך Ctrl+B (או Cmd+B) להדגשת טקסט
+        // פונקציה כללית לעיטוף טקסט מסומן (או סמן) בתחביר Markdown
+        function toggleMarkdownWrapper(wrapper) {
+            const start = editorContent.selectionStart;
+            const end = editorContent.selectionEnd;
+            const value = editorContent.value;
+            const wrapperLen = wrapper.length;
+
+            const before = value.substring(0, start);
+            const selected = value.substring(start, end);
+            const after = value.substring(end, value.length);
+
+            // יצירת הטקסט החדש עם העיטוף
+            const wrappedText = wrapper + selected + wrapper;
+            editorContent.value = before + wrappedText + after;
+
+            let newStart, newEnd;
+
+            if (start === end) {
+                // אם אין בחירה (הדגשה חדשה), מקם את הסמן בתוך הסימנים (לדוגמה: **|**)
+                newStart = start + wrapperLen;
+                newEnd = start + wrapperLen;
+            } else {
+                // אם יש בחירה (עיטוף טקסט), השאר את הטקסט עטוף מסומן
+                newStart = start;
+                newEnd = end + 2 * wrapperLen; 
+            }
+            
+            editorContent.selectionStart = newStart; 
+            editorContent.selectionEnd = newEnd;
+            
+            updatePreview();
+        }
+
+        // קיצורי דרך Ctrl+B ו-Ctrl+I
         editorContent.addEventListener('keydown', (e) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+            // בדיקה עבור Ctrl+B (מודגש) או Cmd+B (Mac)
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
                 e.preventDefault();
-
-                const start = editorContent.selectionStart;
-                const end = editorContent.selectionEnd;
-                const value = editorContent.value;
-                
-                const selected = value.substring(start, end);
-                const newSelected = `**${selected}**`;
-
-                // אם אין בחירה, פשוט הוסף ** ועבור פנימה
-                let insertStart = start;
-                let insertEnd = end;
-                let textToInsert = newSelected;
-
-                if (start === end) {
-                    textToInsert = "****"; // הוסף כוכביות כפולות
-                    insertStart = start + 2; // מיקום הסמן בין הכוכביות
-                    insertEnd = start + 2;
-                } else {
-                    // יש בחירה, בצע החלפה רגילה
-                    const before = value.substring(0, start);
-                    const after = value.substring(end, value.length);
-                    editorContent.value = before + textToInsert + after;
-                    
-                    insertStart = start + newSelected.length;
-                    insertEnd = insertStart;
-                }
-                
-                editorContent.selectionStart = insertStart; 
-                editorContent.selectionEnd = insertEnd;
-                
-                updatePreview();
+                toggleMarkdownWrapper('**');
+            }
+            
+            // בדיקה עבור Ctrl+I (נטוי) או Cmd+I (Mac)
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'i') {
+                e.preventDefault();
+                toggleMarkdownWrapper('*');
             }
         });
 
@@ -272,8 +280,8 @@
 כעת, כל מה שתקלידו בתחביר Markdown, יומר מיד ל-HTML מוכן.
 
 ## כותרת משנית (H2)
-* **מודגש:** השתמשו בכוכביות כפולות: \`**טקסט מודגש**\`.
-* _נטוי:_ השתמשו בכוכבית בודדת: \`*טקסט נטוי*\`.
+* **מודגש:** השתמשו בכוכביות כפולות: \`**טקסט מודגש**\` (נסו: Ctrl+B).
+* _נטוי:_ השתמשו בכוכבית בודדת: \`*טקסט נטוי*\` (נסו: Ctrl+I).
 
 > ציטוט והערה מיוחדת:
 > יש לשים לב לכך שהטקסט מיושר לימין.

@@ -87,7 +87,7 @@
 <body class="p-4 md:p-8">
 
     <header class="mb-6 text-center">
-        <h1 class="text-4xl font-bold text-indigo-700">עורך Markdown טהור ותצוגה מקדימה (RTL)</h1>
+        <h1 class="4xl font-bold text-indigo-700">עורך Markdown טהור ותצוגה מקדימה (RTL)</h1>
         <p class="text-lg text-gray-600 mt-2">הקלידו Markdown גולמי בצד ימין וצפו בתצוגה המעוצבת בצד שמאל.</p>
     </header>
 
@@ -128,14 +128,26 @@
             try {
                 const finalRawHtml = marked(markdownText);
                 
-                const safeHtmlForDisplay = DOMPurify.sanitize(finalRawHtml);
-
+                // טיפול ספציפי בתמונות: החלפת כל כתובות התמונות בכתובת Placeholder גנרית
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = finalRawHtml;
+                
+                tempDiv.querySelectorAll('img').forEach(img => {
+                    // החלפת ה-src לכתובת Placeholder גנרית לצורך תצוגה מקדימה
+                    img.setAttribute('src', 'https://placehold.co/600x400.png');
+                    
+                    // שמירה על fallback למקרה שגם ה-placeholder ייכשל, שיציג את הטקסט החלופי
+                    img.setAttribute('onerror', `this.onerror=null; this.alt='[שגיאת טעינה: הוצג טקסט חלופי]'; this.src='https://placehold.co/600x400/eeeeee/333333?text='+encodeURIComponent(this.alt);`);
+                    img.setAttribute('class', 'max-w-full h-auto rounded-md shadow-md');
+                });
+                
+                const safeHtmlForDisplay = DOMPurify.sanitize(tempDiv.innerHTML);
+                
                 previewElement.innerHTML = safeHtmlForDisplay;
                 
                 if (markdownText.trim() === '') {
                     previewElement.innerHTML = '<p class="text-center text-gray-400 mt-20">התצוגה המקדימה תופיע כאן אוטומטית.</p>';
                 }
-
 
             } catch (error) {
                 previewElement.innerHTML = `<div class="p-4 bg-red-100 border border-red-400 text-red-700 rounded text-right" dir="rtl">
@@ -169,6 +181,12 @@
 | :--- | :--- | :--- |
 | משתמשים | 1,200 | תקין |
 | ביצועים | 250ms | דורש שיפור |
+
+---
+## תצוגת תמונה
+**שימו לב:** התמונה המוצגת היא placeholder גנרי בגודל 600x400.
+הקוד המקורי נשאר ב-Markdown אך מוצג Placeholder בתצוגה מקדימה.
+![תמונה לדוגמה: סמל אפליקציה](56_imgs/image2.png)
 `;
             
             editorContent.value = defaultMarkdown.trim();

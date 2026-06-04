@@ -47,21 +47,14 @@
         #preview th { background-color: #f5f6f7; font-weight: 700; color: #1c1e21; }
         #preview tr:nth-child(even) { background-color: #f9f9fa; }
 
+        /* Details / Summary (Docusaurus Style) */
+        #preview details { background-color: #f5f6f7; padding: 0.75rem 1rem; border-radius: 0.4rem; border: 1px solid #ebedf0; margin-bottom: 1rem; }
+        #preview summary { font-weight: 600; cursor: pointer; outline: none; color: #1c1e21; }
+        #preview details[open] summary { margin-bottom: 0.5rem; border-bottom: 1px solid #ebedf0; padding-bottom: 0.25rem; }
+
         /* Docusaurus Admonitions */
-        .admonition {
-            margin: 1.5rem 0;
-            padding: 1rem;
-            border-radius: 0.4rem;
-            border-right: 6px solid #ccc;
-            background-color: #f5f6f7;
-        }
-        .admonition-title {
-            font-weight: bold;
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
+        .admonition { margin: 1.5rem 0; padding: 1rem; border-radius: 0.4rem; border-right: 6px solid #ccc; background-color: #f5f6f7; }
+        .admonition-title { font-weight: bold; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; }
         .admonition.note { border-color: #4cb3d4; background-color: #f0f8fa; color: #2c3e50; }
         .admonition.tip { border-color: #00a400; background-color: #e6f6e6; color: #1a5c1a; }
         .admonition.info { border-color: #54c7ec; background-color: #f0fafc; color: #205464; }
@@ -92,7 +85,6 @@
         <div class="content-box">
             <h2 class="text-xl font-semibold mb-4 border-b pb-2 text-gray-700">עורך MDX / HTML (קלט)</h2>
             
-            <!-- סרגל כלים משודרג -->
             <div class="mb-3 flex flex-wrap gap-2 justify-start bg-gray-50 p-2 rounded-lg border border-gray-200">
                 <button onclick="toggleMarkdownWrapper('**')" class="bg-white hover:bg-gray-100 text-gray-800 font-bold py-1 px-2.5 rounded border border-gray-300 text-xs shadow-sm">
                     B
@@ -110,18 +102,18 @@
                 <button id="insert-link-btn" class="bg-green-50 hover:bg-green-100 text-green-700 font-semibold py-1 px-2.5 rounded border border-green-200 text-xs shadow-sm">
                     🔗 קישור תמיכה
                 </button>
+                <button id="insert-details-btn" class="bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold py-1 px-2.5 rounded border border-purple-200 text-xs shadow-sm">
+                    🔽 טקסט מתקפל
+                </button>
                 <span class="text-gray-300 py-1">|</span>
                 <button id="insert-table-btn" class="bg-gray-800 hover:bg-gray-900 text-white font-semibold py-1 px-2.5 rounded shadow text-xs">
-                    ➕ טבלה
+                    ➕ טבלה דינמית
                 </button>
                 <button onclick="insertAdmonition('note')" class="bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-1 px-2.5 rounded shadow text-xs">
                     💡 Note
                 </button>
                 <button onclick="insertAdmonition('tip')" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-1 px-2.5 rounded shadow text-xs">
                     ✔️ Tip
-                </button>
-                <button onclick="insertAdmonition('warning')" class="bg-amber-500 hover:bg-amber-600 text-white font-semibold py-1 px-2.5 rounded shadow text-xs">
-                    ⚠️ Warning
                 </button>
                 <button id="insert-tabs-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-1 px-2.5 rounded shadow text-xs">
                     🗂️ Tabs
@@ -153,13 +145,18 @@
         const insertTabsBtn = document.getElementById('insert-tabs-btn');
         const insertImageBtn = document.getElementById('insert-image-btn');
         const insertLinkBtn = document.getElementById('insert-link-btn');
+        const insertDetailsBtn = document.getElementById('insert-details-btn');
 
         const marked = window.marked.marked;
 
         const PURIFY_CONFIG = {
-            ADD_TAGS: ['tabs', 'tabitem', 'div', 'span', 'section', 'button'],
+            ADD_TAGS: ['tabs', 'tabitem', 'div', 'span', 'section', 'button', 'details', 'summary'],
             ADD_ATTR: ['class', 'className', 'value', 'label', 'default', 'dir']
         };
+
+        function stripImports(text) {
+            return text.replace(/^import\s+.*\s+from\s+['"].*['"];?/gm, '');
+        }
 
         function parseAdmonitions(text) {
             const admonitionRegex = /^:::(note|tip|info|warning|danger)(?: *(.*))?\n([\s\S]*?)\n:::/gm;
@@ -174,12 +171,14 @@
         }
 
         function parseDocusaurusTabs(text) {
+            // רצה על כל קומפוננטת טאב בנפרד ומייצרת מזה מזהה ייחודי אקראי למניעת התנגשויות
             let updatedText = text.replace(/<Tabs[^>]*>([\s\S]*?)<\/Tabs>/g, function(match, innerContent) {
                 const tabItems = [];
                 const tabContents = [];
                 const itemRegex = /<TabItem\s+value="([^"]+)"\s+label="([^"]+)"[^>]*>([\s\S]*?)<\/TabItem>/g;
                 let itemMatch;
                 let index = 0;
+                const randomId = Math.floor(Math.random() * 10000);
                 
                 while ((itemMatch = itemRegex.exec(innerContent)) !== null) {
                     const value = itemMatch[1];
@@ -188,8 +187,8 @@
                     const isActive = index === 0 ? 'active' : '';
                     const isHidden = index === 0 ? '' : 'display:none;';
                     
-                    tabItems.push(`<li class="mock-tab-item ${isActive}" data-tab="${value}">${label}</li>`);
-                    tabContents.push(`<div class="mock-tab-content" id="tab-content-${value}" style="${isHidden}">${marked(content.trim())}</div>`);
+                    tabItems.push(`<li class="mock-tab-item ${isActive}" data-tab="${value}_${randomId}">${label}</li>`);
+                    tabContents.push(`<div class="mock-tab-content" id="tab-content-${value}_${randomId}" style="${isHidden}">${marked(content.trim())}</div>`);
                     index++;
                 }
 
@@ -213,27 +212,26 @@
         }
 
         function updatePreview() {
-            let markdownText = editorContent.value;
-            markdownOutput.textContent = markdownText;
+            let originalText = editorContent.value;
+            markdownOutput.textContent = originalText;
 
-            if (markdownText.trim() === '') {
+            if (originalText.trim() === '') {
                 previewElement.innerHTML = '<p class="text-center text-gray-400 mt-20">התצוגה המקדימה תופיע כאן אוטומטית.</p>';
                 return;
             }
 
             try {
-                markdownText = parseAdmonitions(markdownText);
-                markdownText = parseDocusaurusTabs(markdownText);
+                let processedText = stripImports(originalText);
+                processedText = parseAdmonitions(processedText);
+                processedText = parseDocusaurusTabs(processedText);
 
-                let finalRawHtml = marked(markdownText);
+                let finalRawHtml = marked(processedText);
                 
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = finalRawHtml;
                 
-                // טיפול בתמונות: זיהוי נתיבים והצגת פלייסהולדר נקי בתצוגה המקדימה
                 tempDiv.querySelectorAll('img').forEach(img => {
                     const currentSrc = img.getAttribute('src') || '';
-                    // אם מדובר בנתיב מקומי או נתיב המכיל ספריות תמונות מוגדרות
                     if(!currentSrc.startsWith('http') || currentSrc.includes('imgs/')) {
                         img.setAttribute('src', 'https://placehold.co/600x250/ebedf0/' + encodeURIComponent(img.alt || 'Image Preview'));
                     }
@@ -263,13 +261,11 @@
                     parent.querySelectorAll('.mock-tab-item').forEach(t => t.classList.remove('active'));
                     this.classList.add('active');
                     
-                    parent.querySelectorAll('.mock-tab-content').forEach(c => c.style.display = 'none');
-                    
                     parent.querySelectorAll('.mock-tab-content').forEach(content => {
                         if(content.id === `tab-content-${tabValue}`) {
-                            content.style.setProperty('display', 'block', 'important');
+                            content.style.display = 'block';
                         } else {
-                            content.style.setProperty('display', 'none', 'important');
+                            content.style.display = 'none';
                         }
                     });
                 });
@@ -287,7 +283,6 @@
             editorContent.focus();
         }
 
-        // פונקציה לעיטוף טקסט מסומן (תומכת בהפעלה מכפתור חיצוני)
         function toggleMarkdownWrapper(wrapper) {
             const start = editorContent.selectionStart;
             const end = editorContent.selectionEnd;
@@ -316,7 +311,6 @@
             editorContent.focus();
         }
 
-        // הוספת סגנון כותרת H3 לשורה הנוכחית או לטקסט המסומן
         function insertHeaderStyle() {
             const start = editorContent.selectionStart;
             const end = editorContent.selectionEnd;
@@ -334,34 +328,63 @@
         }
 
         function insertAdmonition(type) {
-            const block = `\n:::${type} כותרת מותאמת ל${type}\nתוכן האזהרה או ההערה כאן...\n:::\n`;
+            const block = `\n:::${type} כותרת מותאמת\nתוכן כאן...\n:::\n`;
             insertTextAtCursor(block);
         }
 
-        // כפתור תמונה המייצר את הפורמט הדרוש במדויק
-        insertImageBtn.addEventListener('click', () => {
-            const imgCount = previewElement.querySelectorAll('img').length + 1;
-            const imgTemplate = `![תיאור תמונה ${imgCount}](X11_imgs/img_${imgCount}.jpg)`;
-            insertTextAtCursor(imgTemplate);
-        });
-
-        // כפתור לינק המייצר קישור מודגש לאתר התמיכה
-        insertLinkBtn.addEventListener('click', () => {
-            const linkTemplate = `[**מרכז התמיכה של Ruijie**](https://support.ruijie-reyee.co.il)`;
-            insertTextAtCursor(linkTemplate);
-        });
-
-        insertTabsBtn.addEventListener('click', () => {
-            const tabsBlock = `\n<Tabs>\n  <TabItem value="win" label="Windows">\n    תוכן עבור ווינדוס\n  </TabItem>\n  <TabItem value="linux" label="Linux">\n    תוכן עבור לינוקס\n  </TabItem>\n</Tabs>\n`;
-            insertTextAtCursor(tabsBlock);
-        });
-
         insertTableBtn.addEventListener('click', () => {
-            let tableMd = "\n| פרמטר | ערך |\n| :--- | :--- |\n| נתון | סטטוס |\n";
+            const rows = parseInt(prompt("אנא הזינו את מספר השורות (כולל כותרת):", "3"));
+            const cols = parseInt(prompt("אנא הזינו את מספר העמודות:", "3"));
+
+            if (isNaN(rows) || rows <= 0 || isNaN(cols) || cols <= 0) {
+                return;
+            }
+
+            let tableMd = "\n";
+            let headers = [];
+            let alignment = [];
+            let rowData = [];
+
+            for (let i = 1; i <= cols; i++) {
+                headers.push(`כותרת ${i}`);
+                alignment.push(`:---`);
+            }
+            tableMd += `| ${headers.join(' | ')} |\n`;
+            tableMd += `| ${alignment.join(' | ')} |\n`;
+
+            for (let r = 1; r < rows; r++) {
+                let cells = [];
+                for (let c = 1; c <= cols; c++) {
+                    cells.push(`נתון ${r}, ${c}`);
+                }
+                rowData.push(`| ${cells.join(' | ')} |`);
+            }
+            tableMd += rowData.join('\n');
+            tableMd += "\n";
+
             insertTextAtCursor(tableMd);
         });
 
-        // האזנה למקשים קיצורים במקלדת (Ctrl+B / Ctrl+I)
+        insertTabsBtn.addEventListener('click', () => {
+            const tabsBlock = `\nimport Tabs from '@theme/Tabs';\nimport TabItem from '@theme/TabItem';\n\n<Tabs>\n  <TabItem value="win" label="Windows">\n    תוכן עבור ווינדוס\n  </TabItem>\n  <TabItem value="linux" label="Linux">\n    תוכן עבור לינוקס\n  </TabItem>\n</Tabs>\n`;
+            insertTextAtCursor(tabsBlock);
+        });
+
+        insertDetailsBtn.addEventListener('click', () => {
+            const detailsTemplate = `\n<details>\n<summary>שאלה ראשונה:</summary>\n\nכאן מזינים את התוכן הנסתר שיוצג רק כאשר פותחים את האלמנט.\n\n</details>\n`;
+            insertTextAtCursor(detailsTemplate);
+        });
+
+        insertImageBtn.addEventListener('click', () => {
+            const imgTemplate = `![ממשק הניהול](X11_imgs/img_1.jpg)`;
+            insertTextAtCursor(imgTemplate);
+        });
+
+        insertLinkBtn.addEventListener('click', () => {
+            const linkTemplate = `[**טקסט לחיץ**](https://support.ruijie-reyee.co.il)`;
+            insertTextAtCursor(linkTemplate);
+        });
+
         editorContent.addEventListener('keydown', (e) => {
             if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
                 e.preventDefault();
@@ -375,23 +398,25 @@
 
         window.onload = function() {
             const defaultMDX = `
-# מדריך עבודה מורחב
+# מערכת סימולציה מתקדמת ל-Docusaurus
 
-ניתן להשתמש בסרגל הכלים החדש כדי להטמיע קישורים ותמונות בצורה מהירה:
+### רכיבים חדשים ושימוש בסרגל הכלים:
 
-### כותרת לדוגמה (H3)
-כאן יש שורה המכילה קישור מודגש המפנה ישירות למקור חיצוני:
-[**טקסט לחיץ**](https://support.ruijie-reyee.co.il)
+<details>
+<summary>שאלה ראשונה:</summary>
+זהו טקסט מוקטן שמוסתר כברירת מחדל, וניתן לפתוח אותו בלחיצה על החץ בצד ימין!
+</details>
 
 ---
 
-## תצוגת תמונות בתיעוד
-הקוד מכיל נתיב תיעוד מקומי מלא, אך התצוגה המקדימה מייצרת עבורו אינדיקטור נקי:
-![ממשק ניהול בענן](X11_imgs/img_1.jpg)
+## טבלאות RTL מובנות
+לחצו על **➕ טבלה דינמית** כדי לייצר טבלה בגודל מותאם אישית:
 
-:::tip עיצוב מהיר
-סמנו טקסט בעורך ולחצו על הלחצנים העליונים **B** (מודגש), **I** (נטוי) או **H3** כדי לעצב את השורות באופן מיידי!
-:::
+| כותרת 1 | כותרת 2 | כותרת 3 |
+| :--- | :--- | :--- |
+| נתון 1, 1 | נתון 1, 2 | נתון 1, 3 |
+| נתון 2, 1 | נתון 2, 2 | נתון 2, 3 |
+
 `;
             editorContent.value = defaultMDX.trim();
             editorContent.addEventListener('input', updatePreview);

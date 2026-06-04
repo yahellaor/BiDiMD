@@ -85,6 +85,7 @@
         <div class="content-box">
             <h2 class="text-xl font-semibold mb-4 border-b pb-2 text-gray-700">עורך MDX / HTML (קלט)</h2>
             
+            <!-- סרגל כלים -->
             <div class="mb-3 flex flex-wrap gap-2 justify-start bg-gray-50 p-2 rounded-lg border border-gray-200">
                 <button onclick="toggleMarkdownWrapper('**')" class="bg-white hover:bg-gray-100 text-gray-800 font-bold py-1 px-2.5 rounded border border-gray-300 text-xs shadow-sm">
                     B
@@ -154,8 +155,11 @@
             ADD_ATTR: ['class', 'className', 'value', 'label', 'default', 'dir']
         };
 
-        function stripImports(text) {
-            return text.replace(/^import\s+.*\s+from\s+['"].*['"];?/gm, '');
+        function stripFrontMatterAndImports(text) {
+            // מסיר את ה-Front Matter מהתצוגה המקדימה הוויזואלית כדי שלא יופיע כטקסט פשוט
+            let cleaned = text.replace(/^---[\s\S]*?---\n*/, '');
+            // מסיר שורות import
+            return cleaned.replace(/^import\s+.*\s+from\s+['"].*['"];?/gm, '');
         }
 
         function parseAdmonitions(text) {
@@ -171,7 +175,6 @@
         }
 
         function parseDocusaurusTabs(text) {
-            // רצה על כל קומפוננטת טאב בנפרד ומייצרת מזה מזהה ייחודי אקראי למניעת התנגשויות
             let updatedText = text.replace(/<Tabs[^>]*>([\s\S]*?)<\/Tabs>/g, function(match, innerContent) {
                 const tabItems = [];
                 const tabContents = [];
@@ -221,7 +224,7 @@
             }
 
             try {
-                let processedText = stripImports(originalText);
+                let processedText = stripFrontMatterAndImports(originalText);
                 processedText = parseAdmonitions(processedText);
                 processedText = parseDocusaurusTabs(processedText);
 
@@ -397,7 +400,10 @@
         });
 
         window.onload = function() {
-            const defaultMDX = `
+            const defaultMDX = `---
+title: כותרת עמוד בעברית
+---
+
 # מערכת סימולציה מתקדמת ל-Docusaurus
 
 ### רכיבים חדשים ושימוש בסרגל הכלים:
@@ -418,7 +424,7 @@
 | נתון 2, 1 | נתון 2, 2 | נתון 2, 3 |
 
 `;
-            editorContent.value = defaultMDX.trim();
+            editorContent.value = defaultMDX;
             editorContent.addEventListener('input', updatePreview);
             updatePreview();
         };

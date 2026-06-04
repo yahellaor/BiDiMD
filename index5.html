@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>עורך MDX ו-HTML - סימולטור Docusaurus RTL</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700&family=Fira+Code:wght@400;500&display=swap');
+        
+        body {
+            font-family: 'Heebo', sans-serif;
+            background-color: #f8fafc;
+            color: #1c1e21;
+        }
+        .content-box {
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            background-color: white;
+            transition: box-shadow 0.3s;
+            display: flex;
+            flex-direction: column;
+        }
+        .content-box:hover {
+             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Docusaurus Core Styles Perspective */
+        #preview h1 { font-size: 2.25rem; font-weight: 700; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #ebedf0; color: #1c1e21; }
+        #preview h2 { font-size: 1.75rem; font-weight: 700; margin-top: 2rem; margin-bottom: 1rem; border-bottom: 1px solid #ebedf0; padding-bottom: 0.25rem; color: #1c1e21; }
+        #preview h3 { font-size: 1.35rem; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #1c1e21; }
+        #preview p, #preview li { line-height: 1.65; margin-bottom: 1rem; font-size: 1rem; }
+        #preview ul { list-style-type: disc; margin-right: 1.5rem; margin-bottom: 1rem; }
+        #preview ol { list-style-type: decimal; margin-right: 1.5rem; margin-bottom: 1rem; }
+        #preview a { color: #3578e5; text-decoration: none; font-weight: 600; }
+        #preview a:hover { text-decoration: underline; }
+        
+        /* Code Blocks */
+        #preview pre { background-color: #282c34; color: #abb2bf; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; margin-bottom: 1rem; font-family: 'Fira Code', monospace; font-size: 0.9rem; text-align: left; direction: ltr; }
+        #preview code { background-color: #f1f3f5; color: #e01e5a; padding: 0.2rem 0.4rem; border-radius: 0.3rem; font-size: 0.875rem; font-family: 'Fira Code', monospace; font-weight: 500; }
+        #preview pre code { background-color: transparent; color: inherit; padding: 0; font-size: inherit; }
+        
+        /* Tables */
+        #preview table { width: 100%; margin: 1.5rem 0; border-collapse: collapse; font-size: 0.95rem; text-align: right; direction: rtl; }
+        #preview th, #preview td { padding: 0.75rem 1rem; border: 1px solid #ebedf0; text-align: right; }
+        #preview th { background-color: #f5f6f7; font-weight: 700; color: #1c1e21; }
+        #preview tr:nth-child(even) { background-color: #f9f9fa; }
+
+        /* Docusaurus Admonitions */
+        .admonition {
+            margin: 1.5rem 0;
+            padding: 1rem;
+            border-radius: 0.4rem;
+            border-right: 6px solid #ccc;
+            background-color: #f5f6f7;
+        }
+        .admonition-title {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .admonition.note { border-color: #4cb3d4; background-color: #f0f8fa; color: #2c3e50; }
+        .admonition.tip { border-color: #00a400; background-color: #e6f6e6; color: #1a5c1a; }
+        .admonition.info { border-color: #54c7ec; background-color: #f0fafc; color: #205464; }
+        .admonition.warning { border-color: #e6a100; background-color: #fef8e6; color: #664d00; }
+        .admonition.danger { border-color: #fa383e; background-color: #ffe6e6; color: #990000; }
+
+        /* Tabs Simulation */
+        .mock-tabs { display: flex; border-bottom: 2px solid #ebedf0; margin-bottom: 0px; padding: 0; list-style: none; gap: 0.5rem; }
+        .mock-tab-item { padding: 0.5rem 1rem; cursor: pointer; border-bottom: 3px solid transparent; font-weight: 500; color: #606770; margin-bottom: -2px; }
+        .mock-tab-item.active { border-bottom-color: #3578e5; color: #3578e5; }
+        .mock-tabs-container { border: 1px solid #ebedf0; border-top: none; padding: 1rem; border-radius: 0 0 0.5rem 0.5rem; background: #fff; margin-bottom: 1rem; }
+
+        #editor-content, #preview { direction: rtl; text-align: right; }
+        #editor-content { border: 1px solid #e2e8f0; min-height: 500px; padding: 1rem; border-radius: 0.5rem; outline: none; line-height: 1.8; font-family: monospace; font-size: 1rem; resize: none; flex-grow: 1; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/lib/marked.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+</head>
+<body class="p-4 md:p-8">
+
+    <header class="mb-6 text-center">
+        <h1 class="text-3xl font-bold text-blue-600">סימולטור ועורך Docusaurus MDX (RTL)</h1>
+        <p class="text-md text-gray-600 mt-2">תמיכה מורחבת ב-HTML, קומפוננטות של Docusaurus ותחביר Admonitions ייעודי.</p>
+    </header>
+
+    <main class="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
+        
+        <div class="content-box">
+            <h2 class="text-xl font-semibold mb-4 border-b pb-2 text-gray-700">עורך MDX / HTML (קלט)</h2>
+            
+            <!-- סרגל כלים משודרג -->
+            <div class="mb-3 flex flex-wrap gap-2 justify-start bg-gray-50 p-2 rounded-lg border border-gray-200">
+                <button onclick="toggleMarkdownWrapper('**')" class="bg-white hover:bg-gray-100 text-gray-800 font-bold py-1 px-2.5 rounded border border-gray-300 text-xs shadow-sm">
+                    B
+                </button>
+                <button onclick="toggleMarkdownWrapper('*')" class="bg-white hover:bg-gray-100 text-gray-800 italic py-1 px-2.5 rounded border border-gray-300 text-xs shadow-sm">
+                    I
+                </button>
+                <button onclick="insertHeaderStyle()" class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-1 px-2 rounded border border-gray-300 text-xs shadow-sm">
+                    H3 (###)
+                </button>
+                <span class="text-gray-300 py-1">|</span>
+                <button id="insert-image-btn" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-1 px-2.5 rounded border border-blue-200 text-xs shadow-sm">
+                    🖼️ הוסף תמונה
+                </button>
+                <button id="insert-link-btn" class="bg-green-50 hover:bg-green-100 text-green-700 font-semibold py-1 px-2.5 rounded border border-green-200 text-xs shadow-sm">
+                    🔗 קישור תמיכה
+                </button>
+                <span class="text-gray-300 py-1">|</span>
+                <button id="insert-table-btn" class="bg-gray-800 hover:bg-gray-900 text-white font-semibold py-1 px-2.5 rounded shadow text-xs">
+                    ➕ טבלה
+                </button>
+                <button onclick="insertAdmonition('note')" class="bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-1 px-2.5 rounded shadow text-xs">
+                    💡 Note
+                </button>
+                <button onclick="insertAdmonition('tip')" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-1 px-2.5 rounded shadow text-xs">
+                    ✔️ Tip
+                </button>
+                <button onclick="insertAdmonition('warning')" class="bg-amber-500 hover:bg-amber-600 text-white font-semibold py-1 px-2.5 rounded shadow text-xs">
+                    ⚠️ Warning
+                </button>
+                <button id="insert-tabs-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-1 px-2.5 rounded shadow text-xs">
+                    🗂️ Tabs
+                </button>
+            </div>
+
+            <textarea id="editor-content" 
+                 class="w-full text-lg focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition duration-150"
+                 spellcheck="false"></textarea>
+
+            <h3 class="text-lg font-semibold mt-4 mb-2 text-gray-700">MDX Output (פלט גולמי)</h3>
+            <pre id="markdown-output" class="text-sm whitespace-pre-wrap bg-gray-900 text-gray-300 p-3 rounded-lg border border-gray-800 min-h-[50px] !direction-ltr !text-left">הקלידו קוד MDX בתיבת העריכה.</pre>
+        </div>
+        
+        <div class="content-box">
+            <h2 class="text-xl font-semibold mb-4 border-b pb-2 text-gray-700">תצוגה מקדימה Docusaurus Theme</h2>
+            <div id="preview" class="border border-gray-300 p-5 rounded-lg overflow-y-auto flex-grow bg-white">
+                <p class="text-center text-gray-400 mt-20">התצוגה המקדימה תופיע כאן אוטומטית.</p>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        const editorContent = document.getElementById('editor-content');
+        const previewElement = document.getElementById('preview');
+        const markdownOutput = document.getElementById('markdown-output');
+        const insertTableBtn = document.getElementById('insert-table-btn');
+        const insertTabsBtn = document.getElementById('insert-tabs-btn');
+        const insertImageBtn = document.getElementById('insert-image-btn');
+        const insertLinkBtn = document.getElementById('insert-link-btn');
+
+        const marked = window.marked.marked;
+
+        const PURIFY_CONFIG = {
+            ADD_TAGS: ['tabs', 'tabitem', 'div', 'span', 'section', 'button'],
+            ADD_ATTR: ['class', 'className', 'value', 'label', 'default', 'dir']
+        };
+
+        function parseAdmonitions(text) {
+            const admonitionRegex = /^:::(note|tip|info|warning|danger)(?: *(.*))?\n([\s\S]*?)\n:::/gm;
+            return text.replace(admonitionRegex, function(match, type, title, content) {
+                const displayTitle = title ? title.trim() : type.toUpperCase();
+                const renderedContent = marked(content.trim());
+                return `<div class="admonition ${type}" dir="rtl">
+                    <div class="admonition-title">${getAdmonitionIcon(type)} ${displayTitle}</div>
+                    <div class="admonition-content">${renderedContent}</div>
+                </div>`;
+            });
+        }
+
+        function parseDocusaurusTabs(text) {
+            let updatedText = text.replace(/<Tabs[^>]*>([\s\S]*?)<\/Tabs>/g, function(match, innerContent) {
+                const tabItems = [];
+                const tabContents = [];
+                const itemRegex = /<TabItem\s+value="([^"]+)"\s+label="([^"]+)"[^>]*>([\s\S]*?)<\/TabItem>/g;
+                let itemMatch;
+                let index = 0;
+                
+                while ((itemMatch = itemRegex.exec(innerContent)) !== null) {
+                    const value = itemMatch[1];
+                    const label = itemMatch[2];
+                    const content = itemMatch[3];
+                    const isActive = index === 0 ? 'active' : '';
+                    const isHidden = index === 0 ? '' : 'display:none;';
+                    
+                    tabItems.push(`<li class="mock-tab-item ${isActive}" data-tab="${value}">${label}</li>`);
+                    tabContents.push(`<div class="mock-tab-content" id="tab-content-${value}" style="${isHidden}">${marked(content.trim())}</div>`);
+                    index++;
+                }
+
+                return `<div class="docusaurus-tabs-mock">
+                    <ul class="mock-tabs">${tabItems.join('')}</ul>
+                    <div class="mock-tabs-container">${tabContents.join('')}</div>
+                </div>`;
+            });
+            return updatedText;
+        }
+
+        function getAdmonitionIcon(type) {
+            switch(type) {
+                case 'note': return '💡';
+                case 'tip': return '💡';
+                case 'info': return 'ℹ️';
+                case 'warning': return '⚠️';
+                case 'danger': return '🔥';
+                default: return '📝';
+            }
+        }
+
+        function updatePreview() {
+            let markdownText = editorContent.value;
+            markdownOutput.textContent = markdownText;
+
+            if (markdownText.trim() === '') {
+                previewElement.innerHTML = '<p class="text-center text-gray-400 mt-20">התצוגה המקדימה תופיע כאן אוטומטית.</p>';
+                return;
+            }
+
+            try {
+                markdownText = parseAdmonitions(markdownText);
+                markdownText = parseDocusaurusTabs(markdownText);
+
+                let finalRawHtml = marked(markdownText);
+                
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = finalRawHtml;
+                
+                // טיפול בתמונות: זיהוי נתיבים והצגת פלייסהולדר נקי בתצוגה המקדימה
+                tempDiv.querySelectorAll('img').forEach(img => {
+                    const currentSrc = img.getAttribute('src') || '';
+                    // אם מדובר בנתיב מקומי או נתיב המכיל ספריות תמונות מוגדרות
+                    if(!currentSrc.startsWith('http') || currentSrc.includes('imgs/')) {
+                        img.setAttribute('src', 'https://placehold.co/600x250/ebedf0/' + encodeURIComponent(img.alt || 'Image Preview'));
+                    }
+                    img.setAttribute('class', 'max-w-full h-auto rounded-md border border-gray-200 shadow-sm my-4');
+                });
+                
+                const safeHtmlForDisplay = DOMPurify.sanitize(tempDiv.innerHTML, PURIFY_CONFIG);
+                previewElement.innerHTML = safeHtmlForDisplay;
+                
+                setupTabsInteractivity();
+
+            } catch (error) {
+                previewElement.innerHTML = `<div class="p-4 bg-red-100 border border-red-400 text-red-700 rounded text-right" dir="rtl">
+                    <p class="font-bold">שגיאה בעיבוד ה-MDX/HTML:</p>
+                    <p>${error.message}</p>
+                </div>`;
+                console.error(error);
+            }
+        }
+
+        function setupTabsInteractivity() {
+            previewElement.querySelectorAll('.mock-tab-item').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const parent = this.closest('.docusaurus-tabs-mock');
+                    const tabValue = this.getAttribute('data-tab');
+                    
+                    parent.querySelectorAll('.mock-tab-item').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    parent.querySelectorAll('.mock-tab-content').forEach(c => c.style.display = 'none');
+                    
+                    parent.querySelectorAll('.mock-tab-content').forEach(content => {
+                        if(content.id === `tab-content-${tabValue}`) {
+                            content.style.setProperty('display', 'block', 'important');
+                        } else {
+                            content.style.setProperty('display', 'none', 'important');
+                        }
+                    });
+                });
+            });
+        }
+
+        function insertTextAtCursor(textToInsert) {
+            const start = editorContent.selectionStart;
+            const end = editorContent.selectionEnd;
+            const value = editorContent.value;
+            editorContent.value = value.substring(0, start) + textToInsert + value.substring(end, value.length);
+            editorContent.selectionStart = start + textToInsert.length;
+            editorContent.selectionEnd = editorContent.selectionStart;
+            updatePreview();
+            editorContent.focus();
+        }
+
+        // פונקציה לעיטוף טקסט מסומן (תומכת בהפעלה מכפתור חיצוני)
+        function toggleMarkdownWrapper(wrapper) {
+            const start = editorContent.selectionStart;
+            const end = editorContent.selectionEnd;
+            const value = editorContent.value;
+            const wrapperLen = wrapper.length;
+
+            const before = value.substring(0, start);
+            const selected = value.substring(start, end);
+            const after = value.substring(end, value.length);
+
+            const wrappedText = wrapper + selected + wrapper;
+            editorContent.value = before + wrappedText + after;
+
+            let newStart, newEnd;
+            if (start === end) {
+                newStart = start + wrapperLen;
+                newEnd = start + wrapperLen;
+            } else {
+                newStart = start;
+                newEnd = end + 2 * wrapperLen; 
+            }
+            
+            editorContent.selectionStart = newStart; 
+            editorContent.selectionEnd = newEnd;
+            updatePreview();
+            editorContent.focus();
+        }
+
+        // הוספת סגנון כותרת H3 לשורה הנוכחית או לטקסט המסומן
+        function insertHeaderStyle() {
+            const start = editorContent.selectionStart;
+            const end = editorContent.selectionEnd;
+            const value = editorContent.value;
+            
+            const before = value.substring(0, start);
+            const selected = value.substring(start, end);
+            const after = value.substring(end, value.length);
+            
+            const headerText = `\n### ${selected || 'כותרת חדשה'}\n`;
+            editorContent.value = before + headerText + after;
+            
+            updatePreview();
+            editorContent.focus();
+        }
+
+        function insertAdmonition(type) {
+            const block = `\n:::${type} כותרת מותאמת ל${type}\nתוכן האזהרה או ההערה כאן...\n:::\n`;
+            insertTextAtCursor(block);
+        }
+
+        // כפתור תמונה המייצר את הפורמט הדרוש במדויק
+        insertImageBtn.addEventListener('click', () => {
+            const imgCount = previewElement.querySelectorAll('img').length + 1;
+            const imgTemplate = `![תיאור תמונה ${imgCount}](X11_imgs/img_${imgCount}.jpg)`;
+            insertTextAtCursor(imgTemplate);
+        });
+
+        // כפתור לינק המייצר קישור מודגש לאתר התמיכה
+        insertLinkBtn.addEventListener('click', () => {
+            const linkTemplate = `[**מרכז התמיכה של Ruijie**](https://support.ruijie-reyee.co.il)`;
+            insertTextAtCursor(linkTemplate);
+        });
+
+        insertTabsBtn.addEventListener('click', () => {
+            const tabsBlock = `\n<Tabs>\n  <TabItem value="win" label="Windows">\n    תוכן עבור ווינדוס\n  </TabItem>\n  <TabItem value="linux" label="Linux">\n    תוכן עבור לינוקס\n  </TabItem>\n</Tabs>\n`;
+            insertTextAtCursor(tabsBlock);
+        });
+
+        insertTableBtn.addEventListener('click', () => {
+            let tableMd = "\n| פרמטר | ערך |\n| :--- | :--- |\n| נתון | סטטוס |\n";
+            insertTextAtCursor(tableMd);
+        });
+
+        // האזנה למקשים קיצורים במקלדת (Ctrl+B / Ctrl+I)
+        editorContent.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+                e.preventDefault();
+                toggleMarkdownWrapper('**');
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'i') {
+                e.preventDefault();
+                toggleMarkdownWrapper('*');
+            }
+        });
+
+        window.onload = function() {
+            const defaultMDX = `
+# מדריך עבודה מורחב
+
+ניתן להשתמש בסרגל הכלים החדש כדי להטמיע קישורים ותמונות בצורה מהירה:
+
+### כותרת לדוגמה (H3)
+כאן יש שורה המכילה קישור מודגש המפנה ישירות למקור חיצוני:
+[**טקסט לחיץ**](https://support.ruijie-reyee.co.il)
+
+---
+
+## תצוגת תמונות בתיעוד
+הקוד מכיל נתיב תיעוד מקומי מלא, אך התצוגה המקדימה מייצרת עבורו אינדיקטור נקי:
+![ממשק ניהול בענן](X11_imgs/img_1.jpg)
+
+:::tip עיצוב מהיר
+סמנו טקסט בעורך ולחצו על הלחצנים העליונים **B** (מודגש), **I** (נטוי) או **H3** כדי לעצב את השורות באופן מיידי!
+:::
+`;
+            editorContent.value = defaultMDX.trim();
+            editorContent.addEventListener('input', updatePreview);
+            updatePreview();
+        };
+    </script>
+</body>
+</html>
